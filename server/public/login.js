@@ -1,5 +1,4 @@
 const API = ""; // same-origin
-
 const $ = (id) => document.getElementById(id);
 
 let deviceCode = null;
@@ -20,11 +19,10 @@ $("startBtn").addEventListener("click", async () => {
     $("startBtn").disabled = true;
 
     const data = await api("/api/auth/device/start", { method: "POST" });
-
     deviceCode = data.device_code;
 
     $("step").style.display = "block";
-    $("stepText").textContent = "1) Open GitHub and enter this code to authorize.";
+    $("stepText").textContent = "Open GitHub and enter this code to authorize.";
     $("userCode").textContent = data.user_code;
     $("verifyLink").href = data.verification_uri;
     $("pollBtn").disabled = false;
@@ -59,7 +57,7 @@ $("pollBtn").addEventListener("click", async () => {
 
     if (data.ok) {
       $("stepText").textContent = `Signed in as ${data.login}.`;
-      $("pollHint").textContent = "Success. You can open the app.";
+      $("pollHint").textContent = "Success. You can open the editor.";
       $("goAppBtn").disabled = false;
       return;
     }
