@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>The Place — Editor</title>
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- Monaco loader -->
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
 </head>
 <body>
   <div class="shell">
@@ -37,19 +40,13 @@
         <div class="toolbar">
           <div class="path" id="activePath">No file open</div>
           <div class="toolbar-right">
-            <input id="findBox" class="input" placeholder="Find (Ctrl+F)" />
             <input id="commitMsg" class="input" placeholder="Commit message" />
             <button id="saveBtn" class="btn primary" disabled>Commit & Push</button>
           </div>
         </div>
 
-        <div class="editor-wrap">
-          <div id="gutter" class="gutter">1</div>
-          <div class="editor-surface" id="surface">
-            <pre id="highlight" class="highlight"></pre>
-            <textarea id="code" class="code" spellcheck="false"></textarea>
-          </div>
-        </div>
+        <!-- Monaco container -->
+        <div id="editor" style="flex:1; min-height:0;"></div>
 
         <div class="statusbar">
           <div id="statusLeft">Ready</div>
@@ -59,7 +56,6 @@
     </div>
   </div>
 
-  <script src="editor.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
