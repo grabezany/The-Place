@@ -1,0 +1,13 @@
+{
+  "name": "the-place-server",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server.js",
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "express": "^4.19.2"
+  },
+  "scripts": {
+    "start": "node server.js"
+  }
+}
