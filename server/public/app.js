@@ -7,8 +7,8 @@ const state = {
   activeRepo: null,
   files: [],
   activeFile: null,
-  dirty: false,
-  editor: null
+  editor: null,
+  dirty: false
 };
 
 function setStatus(left, right="") {
@@ -37,6 +37,66 @@ async function ensureAuth() {
   }
 }
 
+/* ---------------- Monaco Setup ---------------- */
+
+function initMonaco() {
+  return new Promise((resolve) => {
+    require.config({
+      paths: {
+        vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs"
+      }
+    });
+
+    require(["vs/editor/editor.main"], () => {
+      state.editor = monaco.editor.create($("editor"), {
+        value: "// Open a file from the left\n",
+        language: "javascript",
+        theme: "vs-dark",
+        automaticLayout: true,
+        fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New', monospace",
+        fontSize: 14,
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false
+      });
+
+      state.editor.onDidChangeModelContent(() => {
+        if (!state.activeFile) return;
+        const current = state.editor.getValue();
+        state.dirty = current !== (state.activeFile.contentText || "");
+        $("saveBtn").disabled = !state.dirty;
+      });
+
+      resolve();
+    });
+  });
+}
+
+function setLanguageFromPath(path) {
+  const ext = path.split(".").pop().toLowerCase();
+  const map = {
+    js: "javascript",
+    ts: "typescript",
+    html: "html",
+    css: "css",
+    json: "json",
+    md: "markdown",
+    py: "python",
+    java: "java",
+    cpp: "cpp",
+    c: "c",
+    go: "go",
+    rs: "rust",
+    php: "php",
+    sh: "shell",
+    yml: "yaml",
+    yaml: "yaml"
+  };
+  const lang = map[ext] || "plaintext";
+  monaco.editor.setModelLanguage(state.editor.getModel(), lang);
+}
+
+/* ---------------- GitHub Data ---------------- */
+
 async function loadRepos() {
   setStatus("Loading repos…");
   const repos = await api("/api/repos");
@@ -59,7 +119,6 @@ async function loadRepos() {
   state.activeRepo = repos[0];
   sel.value = state.activeRepo.full_name;
   $("repoMeta").textContent = `Branch: ${state.activeRepo.default_branch}`;
-  setStatus("Repos loaded.");
 }
 
 function renderTree() {
@@ -79,34 +138,28 @@ function renderTree() {
     el.innerHTML = `${indents}<span>·</span><span>${f.path.split("/").pop()}</span>`;
     el.title = f.path;
 
-    el.addEventListener("click", async () => {
-      if (state.dirty) {
-        const ok = confirm("Discard unsaved changes?");
-        if (!ok) return;
-      }
+    el.onclick = async () => {
+      if (state.dirty && !confirm("Discard unsaved changes?")) return;
       await openFile(f.path);
       highlightActive(f.path);
-    });
+    };
 
     root.appendChild(el);
   }
 }
 
 function highlightActive(path) {
-  for (const el of document.querySelectorAll(".tree .item")) {
+  document.querySelectorAll(".tree .item").forEach(el => {
     el.classList.toggle("active", el.dataset.path === path);
-  }
+  });
 }
 
 async function loadTree() {
-  if (!state.activeRepo) return;
   const { owner, name, default_branch } = state.activeRepo;
-
-  setStatus("Loading files…", state.activeRepo.full_name);
-  const data = await api(`/api/tree?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}&branch=${encodeURIComponent(default_branch)}`);
+  setStatus("Loading files…");
+  const data = await api(`/api/tree?owner=${owner}&repo=${name}&branch=${default_branch}`);
   state.files = data.files || [];
   renderTree();
-  setStatus("Files ready.", `${state.files.length} files`);
 }
 
 async function openFile(filePath) {
@@ -114,7 +167,7 @@ async function openFile(filePath) {
   setStatus("Opening…", filePath);
 
   const data = await api(
-    `/api/file?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}&path=${encodeURIComponent(filePath)}&ref=${encodeURIComponent(default_branch)}`
+    `/api/file?owner=${owner}&repo=${name}&path=${encodeURIComponent(filePath)}&ref=${default_branch}`
   );
 
   state.activeFile = data;
@@ -123,131 +176,74 @@ async function openFile(filePath) {
   $("activePath").textContent = filePath;
 
   state.editor.setValue(data.contentText || "");
-  setStatus("Opened.", `SHA: ${(data.sha || "").slice(0, 7)}`);
+  setLanguageFromPath(filePath);
+
+  setStatus("Opened.", `SHA: ${data.sha.slice(0,7)}`);
 }
 
 async function saveFile() {
-  if (!state.activeRepo || !state.activeFile) return;
-
   const msg = $("commitMsg").value.trim();
   if (!msg) return alert("Commit message required.");
 
   const { owner, name, default_branch } = state.activeRepo;
 
-  const payload = {
-    owner,
-    repo: name,
-    branch: default_branch,
-    path: state.activeFile.path,
-    sha: state.activeFile.sha,
-    message: msg,
-    contentText: state.editor.getValue()
-  };
-
-  setStatus("Committing…", state.activeFile.path);
+  setStatus("Committing…");
 
   const out = await api("/api/file", {
     method: "PUT",
-    body: JSON.stringify(payload)
+    body: JSON.stringify({
+      owner,
+      repo: name,
+      branch: default_branch,
+      path: state.activeFile.path,
+      sha: state.activeFile.sha,
+      message: msg,
+      contentText: state.editor.getValue()
+    })
   });
 
-  state.activeFile.sha = out.newSha || state.activeFile.sha;
-  state.activeFile.contentText = payload.contentText;
+  state.activeFile.sha = out.newSha;
+  state.activeFile.contentText = state.editor.getValue();
   state.dirty = false;
   $("saveBtn").disabled = true;
   $("commitMsg").value = "";
 
-  setStatus("Pushed.", `New SHA: ${state.activeFile.sha.slice(0, 7)}`);
-}
-
-function installFind() {
-  const box = $("findBox");
-
-  box.addEventListener("keydown", (e) => {
-    if (e.key !== "Enter") return;
-    const q = box.value;
-    if (!q) return;
-
-    const text = state.editor.getValue();
-    const idx = text.indexOf(q);
-    setStatus(idx >= 0 ? `Found "${q}"` : `Not found: "${q}"`, idx >= 0 ? `index ${idx}` : "");
-  });
-
-  window.addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
-      e.preventDefault();
-      box.focus();
-      box.select();
-    }
-  });
+  setStatus("Pushed.", out.newSha.slice(0,7));
 }
 
 async function logout() {
-  await api("/api/auth/logout", { method: "POST" }).catch(() => {});
+  await api("/api/auth/logout", { method: "POST" });
   location.href = "index.html";
 }
 
+/* ---------------- Main ---------------- */
+
 async function main() {
   await ensureAuth();
+  await initMonaco();
+  await loadRepos();
+  await loadTree();
 
-  state.editor = Editor.install({
-    textarea: $("code"),
-    highlightEl: $("highlight"),
-    gutterEl: $("gutter"),
-    surfaceEl: $("surface"),
-    onChange: () => {
-      if (!state.activeFile) return;
-      const cur = state.editor.getValue();
-      state.dirty = cur !== (state.activeFile.contentText || "");
-      $("saveBtn").disabled = !state.dirty;
-    }
-  });
+  $("refreshBtn").onclick = async () => {
+    await loadRepos();
+    await loadTree();
+  };
 
-  installFind();
-
-  $("refreshBtn").addEventListener("click", async () => {
-    try {
-      await loadRepos();
-      await loadTree();
-    } catch (e) {
-      console.error(e);
-      alert(e.message);
-      setStatus("Error.", "See console");
-    }
-  });
-
-  $("repoSelect").addEventListener("change", async (e) => {
-    const full = e.target.value;
-    state.activeRepo = state.repos.find(r => r.full_name === full) || null;
-
+  $("repoSelect").onchange = async (e) => {
+    state.activeRepo = state.repos.find(r => r.full_name === e.target.value);
     state.activeFile = null;
     state.dirty = false;
     $("saveBtn").disabled = true;
     $("activePath").textContent = "No file open";
     state.editor.setValue("");
+    $("repoMeta").textContent = `Branch: ${state.activeRepo.default_branch}`;
+    await loadTree();
+  };
 
-    $("repoMeta").textContent = state.activeRepo ? `Branch: ${state.activeRepo.default_branch}` : "—";
-    if (state.activeRepo) await loadTree();
-  });
+  $("saveBtn").onclick = saveFile;
+  $("logoutBtn").onclick = logout;
 
-  $("saveBtn").addEventListener("click", async () => {
-    try {
-      await saveFile();
-    } catch (e) {
-      console.error(e);
-      alert(e.message);
-      setStatus("Push failed.", "Check permissions");
-    }
-  });
-
-  $("logoutBtn").addEventListener("click", logout);
-
-  await loadRepos();
-  await loadTree();
   setStatus("Ready.");
 }
 
-main().catch((e) => {
-  console.error(e);
-  location.href = "index.html";
-});
+main();
