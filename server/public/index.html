@@ -6,52 +6,50 @@
   <title>The Place</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <div class="center">
-    <div class="card" style="width:min(560px, 95vw)">
-      <div class="brand">
-        <div class="logo">⌘</div>
+<body class="login-bg">
+  <div class="login-card">
+    <div class="brand">
+      <div class="logo">⌘</div>
+      <div>
+        <h1>The Place</h1>
+        <p class="muted">Minimal GitHub sandbox editor</p>
+      </div>
+    </div>
+
+    <p class="muted" style="margin: 0 0 12px;">
+      Sign in with GitHub using a one-time code (Device Flow). Your token stays on the server.
+    </p>
+
+    <div class="row" style="margin-top:12px;">
+      <button id="startBtn" class="btn primary">Start GitHub Login</button>
+      <button id="goAppBtn" class="btn" disabled>Open Editor</button>
+    </div>
+
+    <div id="step" class="login-step" style="display:none;">
+      <div class="step-top">
         <div>
-          <div style="font-weight:800; font-size:18px;">The Place</div>
-          <div class="muted" style="font-size:13px;">Minimal GitHub sandbox editor</div>
+          <div class="step-title">Authorize</div>
+          <div class="muted" id="stepText">—</div>
+        </div>
+        <div class="code-box">
+          <div class="muted" style="font-size:12px;">Code</div>
+          <div class="code" id="userCode">—</div>
         </div>
       </div>
 
-      <p class="muted" style="margin:0 0 14px;">
-        Sign in with GitHub using a code (Device Flow). Your token stays on the server.
-      </p>
-
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button id="startBtn" class="btn primary">Start GitHub Login</button>
-        <button id="goAppBtn" class="btn" disabled>Go to App</button>
+      <div class="row" style="margin-top:10px; flex-wrap:wrap;">
+        <a id="verifyLink" href="#" target="_blank" class="btn">Open GitHub Verify</a>
+        <button id="copyBtn" class="btn">Copy Code</button>
+        <button id="pollBtn" class="btn primary" disabled>Check Login</button>
       </div>
 
-      <div id="step" class="card" style="margin-top:14px; display:none;">
-        <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
-          <div>
-            <div style="font-weight:800;">Step</div>
-            <div class="muted" id="stepText">—</div>
-          </div>
-          <div style="text-align:right;">
-            <div class="muted" style="font-size:12px;">Code</div>
-            <div style="font-family:var(--mono); font-size:18px; letter-spacing:1px;" id="userCode">—</div>
-          </div>
-        </div>
-
-        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-          <a id="verifyLink" href="#" target="_blank" class="btn" style="display:inline-block;">Open GitHub Verify Page</a>
-          <button id="copyBtn" class="btn">Copy Code</button>
-          <button id="pollBtn" class="btn primary" disabled>Check Login</button>
-        </div>
-
-        <div class="muted" style="margin-top:10px; font-size:12px;" id="pollHint">
-          After you approve in GitHub, press “Check Login”.
-        </div>
+      <div class="muted" style="margin-top:10px; font-size:12px;" id="pollHint">
+        Approve in GitHub, then click “Check Login”.
       </div>
+    </div>
 
-      <div class="muted" style="margin-top:14px; font-size:12px;">
-        If you refresh or the server restarts, you may need to log in again.
-      </div>
+    <div class="muted" style="margin-top:14px; font-size:12px;">
+      Tip: if the server restarts (Render sleep), you may need to log in again.
     </div>
   </div>
 
