@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>The Place — Editor</title>
   <link rel="stylesheet" href="styles.css" />
-
-  <!-- Monaco loader -->
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
 </head>
 <body>
@@ -16,12 +14,15 @@
         <div class="logo">⌘</div>
         <div class="title">
           <b>The Place</b>
-          <span id="whoami">…</span>
+          <div class="topline">
+            <button id="userBtn" class="linklike">…</button>
+            <span class="muted">•</span>
+            <button id="repoBtn" class="linklike">Select repo</button>
+          </div>
         </div>
       </div>
 
       <div class="top-actions">
-        <select id="repoSelect" class="select"></select>
         <button id="refreshBtn" class="btn">Refresh</button>
         <button id="logoutBtn" class="btn danger">Log out</button>
       </div>
@@ -30,22 +31,25 @@
     <div class="main">
       <aside class="sidebar">
         <div class="sidebar-head">
-          <div style="font-weight:800;">Files</div>
+          <div style="font-weight:600; font-size:12px;">Files</div>
           <div class="muted" id="repoMeta" style="font-size:12px;">—</div>
         </div>
         <div id="fileTree" class="tree"></div>
       </aside>
 
       <section class="editor-area">
+        <!-- Tabs -->
+        <div class="tabsbar" id="tabsBar"></div>
+
         <div class="toolbar">
-          <div class="path" id="activePath">No file open</div>
+          <div class="path">
+            <span id="activePath">No file open</span>
+          </div>
           <div class="toolbar-right">
-            <input id="commitMsg" class="input" placeholder="Commit message" />
-            <button id="saveBtn" class="btn primary" disabled>Commit & Push</button>
+            <button id="commitOpenBtn" class="btn primary" disabled>Commit & Push</button>
           </div>
         </div>
 
-        <!-- Monaco container -->
         <div id="editor" style="flex:1; min-height:0;"></div>
 
         <div class="statusbar">
@@ -53,6 +57,78 @@
           <div id="statusRight"></div>
         </div>
       </section>
+    </div>
+  </div>
+
+  <!-- Repo Picker Modal -->
+  <div class="modal-backdrop" id="repoModal" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title">Repositories</div>
+          <div class="muted" style="font-size:12px;">Search + scroll</div>
+        </div>
+        <button class="btn" id="repoCloseBtn">Close</button>
+      </div>
+
+      <input id="repoSearch" class="input" placeholder="Search repositories…" />
+
+      <div class="modal-list" id="repoList"></div>
+    </div>
+  </div>
+
+  <!-- Commit Modal -->
+  <div class="modal-backdrop" id="commitModal" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title">Commit & Push</div>
+          <div class="muted" style="font-size:12px;">Title + extended description</div>
+        </div>
+        <button class="btn" id="commitCloseBtn">Close</button>
+      </div>
+
+      <label class="field">
+        <span class="muted">Title</span>
+        <input id="commitTitle" class="input" placeholder="e.g. Fix navbar spacing" />
+      </label>
+
+      <label class="field">
+        <span class="muted">Description (optional)</span>
+        <textarea id="commitBody" class="textarea" placeholder="Explain what changed and why…"></textarea>
+      </label>
+
+      <div class="row" style="justify-content:flex-end;">
+        <button id="commitDoBtn" class="btn primary">Commit & Push</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div class="modal-backdrop" id="profileModal" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title">Profile</div>
+          <div class="muted" style="font-size:12px;">Session info</div>
+        </div>
+        <button class="btn" id="profileCloseBtn">Close</button>
+      </div>
+
+      <div class="profile-box">
+        <div class="profile-row">
+          <div class="muted">Signed in as</div>
+          <div id="profileUser" style="font-family:var(--mono);">—</div>
+        </div>
+        <div class="profile-row">
+          <div class="muted">GitHub</div>
+          <a id="profileLink" href="#" target="_blank">Open profile</a>
+        </div>
+      </div>
+
+      <div class="row" style="justify-content:flex-end;">
+        <button id="profileLogoutBtn" class="btn danger">Log out</button>
+      </div>
     </div>
   </div>
 
